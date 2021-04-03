@@ -1,0 +1,248 @@
+<!DOCTYPEhtml>
+<htmllang="en">
+
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <metacharset="UTF-8">
+            <title>Snake</title>
+            <style>
+                canvas {
+                    border: 20px solid navy;
+                }
+            </style>
+    </head>
+
+    <body onload="startGame()">
+        <script>
+            var snakeHead;
+            var snakeTail;
+            var courses = [101, 114, 160, 161, 214, 215, 216, 220, 300, 303, 306, 307, 310, 311, 312, 316, 320, 327, 334, 337, 351, 352, 354, 371, 373, 376, 380, 385, 416, 506, 512, 526, 527, 532, 540, 541, 544, 545, 548, 550, 555, 564, 566, 600, 645];
+            var maxScore = courses.length;
+
+            function startGame() {
+                snakeHead = new component(20, 20, "purple", 360, 200);
+                snakeTail = new Array;
+                snakeTail0 = new component(20, 20, "green", 360, 200, snakeHead);
+                snakeTail1 = new component(20, 20, "green", 360, 200, snakeTail0);
+                snakeTail.push(snakeTail0);
+                snakeTail.push(snakeTail1);
+                myGameArea.start();
+            }
+
+            function addTailComponent() {
+                var lastComponent = snakeTail[snakeTail.length - 1];
+                var newX;
+                var newY;
+                if (lastComponent.dir == "up") {
+                    newX = lastComponent.x;
+                    newY = lastComponent.y + 20;
+                }
+                else if (lastComponent.dir == "left") {
+                    newX = lastComponent.x + 20;
+                    newY = lastComponent.y;
+                }
+                else if (lastComponent.dir == "right") {
+                    newX = lastComponent.x - 20;
+                    newY = lastComponent.y;
+                }
+                else if (lastComponent.dir == "down") {
+                    newX = lastComponent.x;
+                    newY = lastComponent.y - 20;
+                }
+                else {
+                    newX = lastComponent.x;
+                    newY = lastComponent.y;
+                }
+                snakeTail.push(new component(20, 20, "green", newX, newY, lastComponent));
+                // snakeTail.push(new component(20, 20, "green", 0, 0, lastComponent));
+            }
+
+            var myGameArea = {
+                canvas: document.createElement("canvas"),
+                start: function () {
+                    this.canvas.width = 720;
+                    this.canvas.height = 420;
+                    this.context = this.canvas.getContext("2d");
+                    document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+                    this.interval = setInterval(updateGameArea, 60);
+                    myGameArea.key = false;
+                    window.addEventListener('keydown', function (e) {
+                        myGameArea.key = e.keyCode;
+                    });
+                    this.apple = this.spawnApple();
+                    document.getElementsByTagName('p')[1].innerHTML = "Goal: " + maxScore;
+                },
+                stop: function () {
+                    clearInterval(this.interval);
+                    var display = document.getElementsByTagName('p')[0];
+                    if(this.score == maxScore) {
+                        display.innerHTML = "YOU WIN!"
+                    }
+                    else { display.innerHTML = "GAME OVER";}
+                },
+                spawnApple: function () {
+                    randomX = Math.trunc(36 * Math.random()) * 20;
+                    randomY = Math.trunc(21 * Math.random()) * 20;
+                    randInd = Math.trunc(Math.random() * courses.length);
+                    randCourse = courses.splice(randInd,1)[0];
+                    console.log(randCourse);
+                    // while (true) {
+                    //     console.log(eatenCourses);
+                    // }
+                    // while (randCourse in eatenCourses) {
+                    //     randInd += 1;
+                    //     randCourse = courses[randInd];
+                    //     console.log("Hi");
+                    // }
+                    return new component(20, 20, "red", randomX, randomY, null, randCourse);
+                },
+                // eatApple: function() {
+                //     eatenCourses.push(this.apple.number);
+                //     console.log(eatenCourses);
+                // },
+                clear: function () {
+                    this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                },
+                score: 0
+            }
+
+            function updateScore() {
+                var score = document.getElementsByTagName('p')[0];
+                var text = "Score: " + myGameArea.score;
+                score.innerHTML = text;
+            }
+
+            // Idea for how to code tail movement:
+            // Depends on the direction of the movement of the head:
+            // If dir is up, tail should be the same x coordinate but 
+            // -20 y with respect to head
+            // If dir is left: tail should be same y coordinate, +20 
+            // x with respect to head
+            // If dir is down, tail should be same x coordinate, +20
+            // y with respect to head
+            // If dir is right, tail should be same y coordinate, -20 
+            // x with respect to head
+            function component(width, height, color, x, y, head, number=null) {
+                this.width = width;
+                this.height = height;
+                this.start = false;
+                this.xVel = 0;
+                this.yVel = 0;
+                this.x = x;
+                this.y = y;
+                this.number = number;
+                this.dir = "None";
+                this.lastDir = "None";
+                this.head = head;
+                this.update = function () {
+                    ctx = myGameArea.context;
+                    ctx.fillStyle = color;
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                    ctx.fillStyle = "black";
+                    ctx.strokeRect(this.x, this.y, this.width, this.height);
+                    if (this.number != null) {
+                        ctx.fillStyle = "black";
+                        ctx.fillText(randCourse, this.x, this.y+13);
+                    }
+                }
+                this.newHeadPos = function () {
+                    this.x += this.xVel;
+                    this.y += this.yVel;
+                    // Checks if head has hit the border of the canvas or the tail
+                    if (this.x < 0 || this.y < 0 ||
+                        this.x >= 720 || this.y >= 420) {
+                        myGameArea.stop();
+                    }
+                    snakeTail.forEach(tailComponent => {
+                        if (this.start && tailComponent.x == this.x &&
+                            tailComponent.y == this.y) {
+                            myGameArea.stop();
+                        }
+                    });
+                    // Checks if head has eaten an apple
+                    if (this.x == myGameArea.apple.x &&
+                        this.y == myGameArea.apple.y) {
+                        myGameArea.score += 1;
+                        if(myGameArea.score == maxScore) {
+                            myGameArea.stop();
+                        }
+                        else {
+                            myGameArea.apple = myGameArea.spawnApple();
+                            myGameArea.apple.update();
+                            addTailComponent();
+                            updateScore();
+                        }
+                    }
+                }
+                this.newTailPos = function () {
+                    if (this.head.lastDir === "up") {
+                        this.moveUp();
+                    }
+                    else if (this.head.lastDir === "left") {
+                        this.moveLeft();
+                    }
+                    else if (this.head.lastDir === "right") {
+                        this.moveRight();
+                    }
+                    else if (this.head.lastDir === "down") {
+                        this.moveDown();
+                    }
+                    this.x += this.xVel;
+                    this.y += this.yVel;
+                }
+                this.moveUp = function () {
+                    this.start = true;
+                    this.lastDir = this.dir;
+                    this.dir = "up";
+                    this.yVel = -20;
+                    this.xVel = 0;
+                }
+                this.moveLeft = function () {
+                    this.start = true;
+                    this.lastDir = this.dir;
+                    this.dir = "left";
+                    this.xVel = -20;
+                    this.yVel = 0;
+                }
+                this.moveRight = function () {
+                    this.start = true;
+                    this.lastDir = this.dir;
+                    this.dir = "right";
+                    this.xVel = 20;
+                    this.yVel = 0;
+                }
+                this.moveDown = function () {
+                    this.start = true;
+                    this.lastDir = this.dir;
+                    this.dir = "down";
+                    this.yVel = 20;
+                    this.xVel = 0;
+                    this.start = true;
+                }
+            }
+
+            function updateGameArea() {
+                var grid = myGameArea;
+                grid.clear();
+                grid.apple.update();
+                if (snakeHead.dir != "down" && grid.key == 38) {
+                    snakeHead.moveUp();
+                    // addTailComponent();
+                }
+                else if (snakeHead.dir != "right" && grid.key == 37) { snakeHead.moveLeft(); }
+                else if (snakeHead.dir != "left" && grid.key == 39) { snakeHead.moveRight(); }
+                else if (snakeHead.dir != "up" && grid.key == 40) { snakeHead.moveDown(); }
+                snakeHead.newHeadPos();
+                snakeHead.update();
+                snakeTail.forEach(tailComponent => {
+                    tailComponent.newTailPos();
+                    tailComponent.update();
+
+                });
+            }
+        </script>
+        <p style="text-align: center;"> Score: 0 </p>
+        <p style="text-align: center;"> </p>
+    </body>
+
+</html>
